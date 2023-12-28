@@ -14,7 +14,7 @@ age_model = './model/age_net.caffemodel'
 age_prototxt = './model/age_deploy.prototxt'
 gender_model = './model/gender_net.caffemodel'
 gender_prototxt = './model/gender_deploy.prototxt'
-image_file = './image/male1.jpg'
+image_file = './image/female1.jpg'
 
 age_list = ['(0-2)', '(4-6)', '(8-12)', '(15-20)',
             '(25-32)', '(38-43)', '(48-53)', '(60-100)']
@@ -53,28 +53,69 @@ def selectFile():
 
 def detect(image):
     # image.shape(높이, 너비, 채널)
-
+    (h, w) = image.shape[:2]
     # 모델이 이미지 처리할 수 있는 형식으로 변환함 scale = 1.0 : 이미지의 크기 비율 지정, size, 윤곽의 color이미지가 필요한 것이므로
     # swapRB: RBG로 바꿀 거냐 뭐냐, crop: 이미지 자를 거니?/여기선 전체 이미지 다 사용
     # 이 그림에서 얼굴만 찾아줌
-
+    imageBlob = cv2. dnn.blobFromImage(
+        cv2.resize(image, OUTPUT_SIZE), 1.0, OUTPUT_SIZE, (104.0, 177.0, 123.0), swapRB=False, crop=False)
+    detector.setInput(imageBlob)
+    detections = detector.forward()
     # 새로 그림 넣을 때마다 초기화, 첫번째 행(1)의 0번째 열(0)을 나타냄
-
+    log_ScrolledText.delete(1.0, END)
     # 여러 개의 bounding box(경계상자)는 감지된 무체 또는 얼굴에 대한 정보를 나타냄.
+    for i in range (0, detections.shape[2]):
+        confidence = detections[0, 0, i, 2]
 
-    #  - 3번째 detection[0,0,i,3]는 전체 폭 중 박스 시작점의 x좌표 상대위치 (왼쪽 맨 위 시작점)
-    # - 4번째 detection[0,0,i,4]는 전체 높이 중 박스 시작점의 y좌표 상대위치
-    # - 5번째 detection[0,0,i,5]는 전체 폭 중 박스 끝점의 x좌표 상대위치  (오른쪽 맨 아래 끝점)
-    # - 6번째 detection[0,0,i,6]는 전체 높이 중 박스 끝점의 y좌표 상대위치
+        if confidence > min_confidence:
+            #  - 3번째 detection[0,0,i,3]는 전체 폭 중 박스 시작점의 x좌표 상대위치 (왼쪽 맨 위 시작점)
+            # - 4번째 detection[0,0,i,4]는 전체 높이 중 박스 시작점의 y좌표 상대위치
+            # - 5번째 detection[0,0,i,5]는 전체 폭 중 박스 끝점의 x좌표 상대위치  (오른쪽 맨 아래 끝점)
+            # - 6번째 detection[0,0,i,6]는 전체 높이 중 박스 끝점의 y좌표 상대위치
+            box = detections[0,0,i,3:7] * np.array([w, h, w, h])
+            (startX, startY, endX, endY) = box.astype("int")
+    
+            face = image[startY:endY, startX:endX]
+            (fH, fW)=face.shape[:2]
+            # 얼굴 자르기
+            # (입력이미지데이터, scalefactor:이미지 크기 조절 비율, size:결과 블롭크기, RGB평균값, RGB를 RBG로 바꿀 것인지)
+            face_blob = cv2.dnn.blobFromImage(face, 1.0, (227, 227), (978.42633603, 87.7689143744, 114.89847746), swapRB=False)
+            # 얼굴 1개니까 0번째 인덱스, age중에 probability 가장 높은 것이 뭐냐
+            age_detector.setInput(face_blob)
+            age_predictions = age_detector.forward()
+            age_index = age_predictions[0].argmax()
+            age = age_list[age_index]
+            age_confidence = age_predictions[0][age_index]
+            # 성별도 나이와 같이
+            gender_detector.setInput(face_blob)
+            gender_predictions = gender_detector.forward()
+            gender_index = gender_predictions[0].argmax()
+            gender = gender_list[gender_index]
+            gender_confidence = gender_predictions[0][gender_index]
 
-    # 얼굴 자르기
-    # (입력이미지데이터, scalefactor:이미지 크기 조절 비율, size:결과 블롭크기, RGB평균값, RGB를 RBG로 바꿀 것인지)
-    # 얼굴 1개니까 0번째 인덱스, age중에 probability 가장 높은 것이 뭐냐
-
-    # 포맷에 맞게 출력값 만들어줌
-    # 얼굴 윤곽에 10만큼 공간이 없으면 아래다가 써줌, 아니면 위에다 써줌
-
-    # TITLE: 오렌지색
+            # 포맷에 맞게 출력값 만들어줌
+            text = "{}:{}".format(gender, age)
+            # 얼굴 윤곽에 10만큼 공간이 없으면 아래다가 써줌, 아니면 위에다 써줌
+            y = startY - 10 if startY - 10 > 10 else startY + 10
+            cv2.rectangle(image, (startX, startY), (endX, endY),
+                            (0, 255, 0), 2)
+            cv2.putText(image, text, (startX, y),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 0), 2)
+            # TITLE: 오렌지색
+            log_ScrolledText.insert(END, "%10s %10s %10.2f %2s" % (
+            'Gender: ', gender, gender_confidence*100, '%') + '\n\n', 'TITLE')
+            log_ScrolledText.insert(END, "%10s %10s %10.2f %2s" % (
+                    'Age: ', age, age_confidence*100, '%') + '\n\n', 'TITLE')
+            log_ScrolledText.insert(END, "%15s %20s" % (
+                    'Age', 'Probability(%)')+'\n', 'HEADER')
+            for i in range(len(age_list)):
+                    log_ScrolledText.insert(END, "%10s %15.2f" % (
+                        age_list[i], age_predictions[0][i]*100)+'\n')
+            log_ScrolledText.insert(END, "%12s %20s" % (
+                'Gender', 'Probability(%)')+'\n', 'HEADER')
+            for i in range(len(gender_list)):
+                log_ScrolledText.insert(END, "%10s %15.2f" % (
+                    gender_list[i], gender_predictions[0][i]*100)+'\n')
 
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image = Image.fromarray(image)
@@ -94,7 +135,7 @@ main.geometry()
 read_image = cv2.imread(image_file)
 (height, width) = read_image.shape[:2]
 # openCV는 bgr format(색맹 검사지 느낌)이므로 -> rgb포맷으로 바꾸어줌
-image = cv2.cvtColor(read_image, cv2.COLOR_BGR2RGB)
+image = cv2.cvtColor(read_image, cv2.COLOR_BGR2RGB, )
 # 화면에 보여줌
 image = Image.fromarray(image)
 imgtk = ImageTk.PhotoImage(image=image)
