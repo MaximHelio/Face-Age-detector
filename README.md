@@ -1,6 +1,6 @@
-## Illustration
+## Gender & Age Detection
 
-![image-20231228220107291](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20231228220107291.png)
+![image-20231228220107291](./READMEassets/image-20231228220107291.png)
 
 ## Installation
 
