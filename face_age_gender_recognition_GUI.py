@@ -14,7 +14,7 @@ age_model = './model/age_net.caffemodel'
 age_prototxt = './model/age_deploy.prototxt'
 gender_model = './model/gender_net.caffemodel'
 gender_prototxt = './model/gender_deploy.prototxt'
-image_file = './image/female1.jpg'
+image_file = './image/male1.jpg'
 
 age_list = ['(0-2)', '(4-6)', '(8-12)', '(15-20)',
             '(25-32)', '(38-43)', '(48-53)', '(60-100)']

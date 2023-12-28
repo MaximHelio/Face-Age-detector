@@ -1,6 +1,6 @@
 ## Gender & Age Detection
 
-![image-20231228220107291](./READMEassets/image-20231228220107291.png)
+![image-20231228220107291](./READMEassets/Photo.png)
 
 ## Installation
 
