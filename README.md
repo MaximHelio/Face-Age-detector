@@ -5,7 +5,7 @@
 ## Installation
 
 ```python
-pip install opencv
+pip install opencv-python
 ```
 
 ```python
@@ -16,10 +16,10 @@ python test.py
 ## Run
 
 ```python
-python face_age_gender_recognition_GUI.py
+python run.py
 ```
 
-### Tech Skill
+## Tech Skill
 
 - DNN
 - caffemodel
@@ -29,7 +29,7 @@ python face_age_gender_recognition_GUI.py
 - TKinter
 - Caffe framework
 
-### reference
+## reference
 
 - https://mslilsunshine.tistory.com/70
 
